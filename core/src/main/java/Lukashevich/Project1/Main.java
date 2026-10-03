@@ -7,13 +7,17 @@ import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.badlogic.gdx.math.MathUtils;
 
 //main class inheriting from ApplicationAdapter
 public class Main extends ApplicationAdapter {
 
     private SpriteBatch batch; //used for drawing sprites
     private Texture background; //background image of the court
-    private ShapeRenderer shapeRenderer; //used for drawing shapes like the court, backboard, rim, and support
+    private ShapeRenderer       shapeRenderer; //used for drawing shapes like the court, backboard, rim, and support
+
+    private float playerX; //player's x position
+    private float playerY;  //player's y position
 
     @Override
     public void create() {
@@ -26,6 +30,9 @@ public class Main extends ApplicationAdapter {
         );
 
         shapeRenderer = new ShapeRenderer();
+
+        playerX = MathUtils.random(450, 800); // Place the player randomly on the court
+        playerY = 100; // Set the player's y position to be at the middle of the court
     }
 
     @Override
@@ -93,6 +100,39 @@ public class Main extends ApplicationAdapter {
 
         // Rim outline
         shapeRenderer.rect(209, 310, 55, 7);
+        
+        shapeRenderer.end();
+
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled); //starts new shape renderer for filled shapes again
+        //this is so that the player is drawn on top of the court lines and shapes
+
+        // Head
+        shapeRenderer.setColor(0.85f, 0.65f, 0.45f, 1);
+        shapeRenderer.circle(playerX, playerY + 90, 12);
+
+        // Body
+        shapeRenderer.setColor(0.1f, 0.2f, 0.8f, 1);
+        shapeRenderer.rect(playerX - 12, playerY + 30, 24, 50);
+
+        // Arms
+        shapeRenderer.rect(playerX - 25, playerY + 35, 13, 45);
+        shapeRenderer.rect(playerX + 12, playerY + 35, 13, 45);
+
+        // Legs
+        shapeRenderer.setColor(0.15f, 0.15f, 0.15f, 1);
+        shapeRenderer.rect(playerX - 15, playerY, 30, 40);
+        
+        shapeRenderer.end();
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Line); //starts new shape renderer for lines again
+        
+        shapeRenderer.setColor(1f, 1f, 1f, 1f); //sets color to white for the player lines
+
+        //line to seperate player legs
+        shapeRenderer.line(playerX, playerY, playerX, playerY + 40);
+
+        //lines to seperate player arms
+        shapeRenderer.line(playerX - 15, playerY + 35, playerX - 15, playerY + 70);
+        shapeRenderer.line(playerX + 15, playerY + 35, playerX + 15, playerY + 70);
 
         shapeRenderer.end();
     }
