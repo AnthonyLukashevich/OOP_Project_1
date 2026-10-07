@@ -22,3 +22,9 @@ All notable developments to this project are documented here.
     - Added trajectory physics using trig
     - Added trajectory prediction arc with keybind "t"
 - Reworked code into more manageable, individual methods
+
+10/5/2026 - 
+- Made it so player x position is randomized for each shot, not just on reset
+- Changed the shaperenderer order so every frame the rim is drawn after the ball so the ball goes "through"(behind) the rim
+- Created simple bouncing physics for the backboard and right rim edge
+- Added sources to README

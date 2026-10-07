@@ -23,7 +23,7 @@ public class Main extends ApplicationAdapter {
     // ball
     private float ballX; // center x
     private float ballY; // center y
-    private static final float BALL_RADIUS = 10; // ball radius does not change
+    private static final float BALL_RADIUS = 10; // KEEP RADIUS AT 10, things will break otherwise
 
     // state of the shot
     private enum ShotState { AIMING_ANGLE, AIMING_POWER, FLYING } // the 3 states
@@ -37,7 +37,7 @@ public class Main extends ApplicationAdapter {
     private float velX; // pixels per second, negative = left
     private float velY; // pixels per second, positive = up
 
-    // tuning
+    // tuning, allows you to change speeds of game elements
     private static final float GRAVITY = -900f; // pixels per second squared, negative is down
     private static final float ANGLE_SPEED = 90f; // degrees per second the angle swings
     private static final float POWER_SPEED = 1.2f; // power per second the power swings
@@ -66,6 +66,7 @@ public class Main extends ApplicationAdapter {
 
     // new shot, ball to hand, values set to start
     private void resetShot() {
+        playerX = MathUtils.random(450, 800); // reset position on the court
         ballX = playerX - 30; // player right hand
         ballY = playerY + 40; // hand height
         angle = 0; // start at lowest angle
@@ -115,9 +116,12 @@ public class Main extends ApplicationAdapter {
             velY += GRAVITY * delta; // gravity pulls velY down, velX untouched
             ballX += velX * delta; // move by velocity * time
             ballY += velY * delta; 
+            
+            bounceOffBackboard();
+            bounceOfRim();
 
-            // temporary until bounce physics are implemented. this part resets when ball is out of frame or hits floor
-            if (ballY < playerY || ballX < -50 || ballX > 1010) {
+            // ball resets when it hits the floor
+            if (ballY < playerY) {
                 resetShot();
             }
         }
@@ -151,15 +155,11 @@ public class Main extends ApplicationAdapter {
         shapeRenderer.triangle(0, 0, 960, 0, 960, 175); 
         shapeRenderer.triangle(0, 0, 960, 175, 190, 175); 
 
-        shapeRenderer.setColor(0.95f, 0.95f, 0.95f, 1); // near white
-        shapeRenderer.rect(201, 300, 8, 85); // backboard
-
-        shapeRenderer.setColor(0.90f, 0.15f, 0.05f, 1); // red
-        shapeRenderer.rect(209, 310, 55, 7); // rim
-
         shapeRenderer.setColor(0.30f, 0.30f, 0.30f, 1); // dark gray
         shapeRenderer.rect(166, 350, 12, 190); // vertical pole from ceiling
         shapeRenderer.rect(166, 340, 35, 12); // bend to backboard
+        shapeRenderer.setColor(0.95f, 0.95f, 0.95f, 1); // near white
+        shapeRenderer.rect(201, 300, 8, 85); // backboard
 
         shapeRenderer.end(); // done with solid shapes for court
 
@@ -170,7 +170,6 @@ public class Main extends ApplicationAdapter {
         shapeRenderer.line(190, 175, 960, 175); // back edge
         shapeRenderer.line(700, 0, 700, 175); // center line
         shapeRenderer.ellipse(570, 65, 260, 70); // center ellipse for perspective
-        shapeRenderer.rect(209, 310, 55, 7); // rim outline
 
         shapeRenderer.end();
     }
@@ -212,10 +211,23 @@ public class Main extends ApplicationAdapter {
         float edgeY = BALL_RADIUS * 0.8f; // curve endpoints, up and down from center
         float bendY = BALL_RADIUS * 0.4f; // control point height
 
-        shapeRenderer.curve(ballX - edgeX, ballY + edgeY, ballX, ballY + bendY,
-                ballX, ballY - bendY, ballX - edgeX, ballY - edgeY, 10); // left seam
-        shapeRenderer.curve(ballX + edgeX, ballY + edgeY, ballX, ballY + bendY,
-                ballX, ballY - bendY, ballX + edgeX, ballY - edgeY, 10); // right seam(left mirrored)
+        shapeRenderer.curve(ballX - edgeX, ballY + edgeY, ballX, ballY + bendY, ballX, ballY - bendY, ballX - edgeX, ballY - edgeY, 10); // left seam
+        shapeRenderer.curve(ballX + edgeX, ballY + edgeY, ballX, ballY + bendY, ballX, ballY - bendY, ballX + edgeX, ballY - edgeY, 10); // right seam(left but mirrored)
+
+        shapeRenderer.end();  
+
+        //draw the rim so it is infront of the ball so the ball goes "through" the rim
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+
+        shapeRenderer.setColor(0.90f, 0.15f, 0.05f, 1); // red
+        shapeRenderer.rect(209, 310, 55, 7); // rim
+
+        shapeRenderer.end();
+
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
+
+        shapeRenderer.setColor(1, 1, 1, 1);
+        shapeRenderer.rect(209, 310, 55, 7); // rim outline
 
         shapeRenderer.end();
     }
@@ -280,7 +292,35 @@ public class Main extends ApplicationAdapter {
         }
     }
 
-    // free gpu memory, libgdx calls this on close
+// bounce off the right side of the backboard
+    private void bounceOffBackboard() {
+        if (ballY < 290 || ballY > 395) return; // does not hit the backboard because its too high or low
+        if (ballX < 191) return; // already behind the board
+        if (ballX > 219) return; // left edge of ball hasnt reached the board yet
+        if (velX >= 0) return; // already movving right, ignore it
+
+        ballX = 209 + BALL_RADIUS; //center of the ball could overlap because of frames, so push it out to the right
+        velX = -velX * 0.8f; // flip left to right, 80% of the speed
+        velY = velY * 0.8f; // same vertical direction, 80% of the speed
+    }
+
+// bounce off the right edge of the rim
+private void bounceOfRim() {
+    if (ballY < 300 || ballY > 327) return; // too high or low
+    if (ballX < 254 || ballX > 274) return; // too far left or right of the edge
+
+    if (ballX >= 264 && velX < 0) { // on the right side, moving left
+        ballX = 264 + BALL_RADIUS; // push out to the right
+        velX = -velX * 0.8f; // flip and 80%
+        velY = velY * 0.8f; // same vert velocity, 80% of the speed
+    } else if (ballX < 264 && velX > 0) { // on the left side, moving right
+        ballX = 264 - BALL_RADIUS; // push out to the left
+        velX = -velX * 0.8f; // flip to the left, 80%
+        velY = velY * 0.8f; // same y vel, 80%
+    }
+}
+
+    // free memory, called this on close
     @Override
     public void dispose() {
         batch.dispose();

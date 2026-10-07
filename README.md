@@ -1,8 +1,11 @@
 # Lukashevich Project 1
 
 A 2D physics-based basketball game built in Java using LibGDX.
+
 Submission for Object Oriented Programming Quarter Project #1
+
 All of my code is in the Main.java file
+
 Path: core/src/main/java/Lukashevich/Project1
 
 ## Project Description
@@ -22,10 +25,11 @@ The player selects the angle and power of a shot and launches the basketball wit
 - Shot power selection
 - Basketball projectile physics
 - Trajectory preview
+- Simple rim/backboard hitbox
+- Bouncing Physics
 
 ## Planned Features
 
-- hitbox collisions
 - Scoring system
 - Game reset
 - Windows executable
@@ -37,6 +41,12 @@ The player selects the angle and power of a shot and launches the basketball wit
 - LibGDX
 - Gradle
 - LWJGL3
+
+## Sources
+
+- https://www.oracle.com/java/technologies/javase/codeconventions-namingconventions.html
+- https://javadoc.io/doc/com.badlogicgames.gdx/gdx/latest/index.html
+- https://libgdx.com/wiki/start/a-simple-game
 
 # Changelog
 
@@ -64,3 +74,9 @@ All notable developments to this project are documented here.
     - Added trajectory physics using trig
     - Added trajectory prediction arc with keybind "t"
 - Reworked code into more manageable, individual methods
+
+## 10/7/2026 - 17:00
+- Made it so player x position is randomized for each shot, not just on reset
+- Changed the shaperenderer order so every frame the rim is drawn after the ball so the ball goes "through"(behind) the rim
+- Created simple bouncing physics for the backboard and right rim edge
+- Added sources to README
