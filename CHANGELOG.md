@@ -28,3 +28,12 @@ All notable developments to this project are documented here.
 - Changed the shaperenderer order so every frame the rim is drawn after the ball so the ball goes "through"(behind) the rim
 - Created simple bouncing physics for the backboard and right rim edge
 - Added sources to README
+
+## 10/7/2026 - 17:00
+- Made it so player x position is randomized for each shot, not just on reset
+- Changed the shaperenderer order so every frame the rim is drawn after the ball so the ball goes "through"(behind) the rim
+- Created simple bouncing physics for the backboard and right rim edge
+- Added sources to README
+
+## 10/8/2026 - 13:40
+- Made the ball bounce once and then reset on the second bounce off the floor

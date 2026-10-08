@@ -24,6 +24,7 @@ public class Main extends ApplicationAdapter {
     private float ballX; // center x
     private float ballY; // center y
     private static final float BALL_RADIUS = 10; // KEEP RADIUS AT 10, things will break otherwise
+    private int numberOfFloorBounces = 0; // how many times the ball has bounced off the floor
 
     // state of the shot
     private enum ShotState { AIMING_ANGLE, AIMING_POWER, FLYING } // the 3 states
@@ -76,6 +77,7 @@ public class Main extends ApplicationAdapter {
         velX = 0; // reset/set vel to 0
         velY = 0; // reset/set vel to 0
         state = ShotState.AIMING_ANGLE; // set to first state
+        numberOfFloorBounces = 0;
     }
 
     // power coeff converted to launch speed
@@ -119,6 +121,7 @@ public class Main extends ApplicationAdapter {
             
             bounceOffBackboard();
             bounceOfRim();
+            bounceOffFloor();
 
             // ball resets when it hits the floor
             if (ballY < playerY) {
@@ -318,6 +321,17 @@ private void bounceOfRim() {
         velX = -velX * 0.8f; // flip to the left, 80%
         velY = velY * 0.8f; // same y vel, 80%
     }
+}
+
+private void bounceOffFloor() {
+    if (ballY < playerY) { // at or below floor level
+        ballY = playerY + BALL_RADIUS; // push it up to the floor
+        velY = -velY * 0.7f; // flip to up, 70%
+        velX = velX * 0.8f; // same x direction, 80%
+        numberOfFloorBounces+= 1; //count the number of bounces off the floower
+        if (numberOfFloorBounces == 2) resetShot(); // velocity is small
+    }
+    else return; // not below the floor, ignore it
 }
 
     // free memory, called this on close
