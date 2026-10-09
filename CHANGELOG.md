@@ -37,3 +37,8 @@ All notable developments to this project are documented here.
 
 ## 10/8/2026 - 13:40
 - Made the ball bounce once and then reset on the second bounce off the floor
+
+## 10/8/2026 - 19:50
+- Added scoring
+- Added game phases: tutorial, countdown, round, gameover
+- Added text tutorial and messages

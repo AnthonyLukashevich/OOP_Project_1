@@ -14,6 +14,8 @@ This project is a simple 2D basketball game focused on projectile physics and pl
 
 The player selects the angle and power of a shot and launches the basketball with the goal of of getting it through the hoop. The game will use physics to calculate the ball's trajectory, including gravity and collisions/bounces.
 
+Ensure JDK 21 is installed, then run the code by running the Lwjgl3Launcher.java in the path lwjgl3/src/java.
+
 ## Current Features
 
 - 2D basketball court with perspective
@@ -27,13 +29,13 @@ The player selects the angle and power of a shot and launches the basketball wit
 - Trajectory preview
 - Simple rim/backboard hitbox
 - Bouncing Physics
+- Scoring System
+- Game reset
+- Tutorial Introduction
 
 ## Planned Features
 
-- Scoring system
-- Game reset
 - Windows executable
-- Tutorial introduction
 
 ## Applications
 
@@ -47,6 +49,8 @@ The player selects the angle and power of a shot and launches the basketball wit
 - https://www.oracle.com/java/technologies/javase/codeconventions-namingconventions.html
 - https://javadoc.io/doc/com.badlogicgames.gdx/gdx/latest/index.html
 - https://libgdx.com/wiki/start/a-simple-game
+- https://libgdx.com/wiki/graphics/2d/fonts/bitmap-fonts
+- https://libgdx.com/wiki/input/input-handling
 
 # Changelog
 
@@ -83,3 +87,8 @@ All notable developments to this project are documented here.
 
 ## 10/8/2026 - 13:40
 - Made the ball bounce once and then reset on the second bounce off the floor
+
+## 10/8/2026 - 19:50
+- Added scoring
+- Added game phases: tutorial, countdown, round, gameover
+- Added text tutorial and messages

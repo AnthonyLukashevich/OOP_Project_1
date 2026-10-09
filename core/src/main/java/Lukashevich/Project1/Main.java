@@ -8,6 +8,7 @@ import com.badlogic.gdx.graphics.Texture; // image stored on the gpu
 import com.badlogic.gdx.graphics.g2d.SpriteBatch; // draws textures
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer; // draws shapes and lines
 import com.badlogic.gdx.math.MathUtils; // sin, cos, random helpers
+import com.badlogic.gdx.graphics.g2d.BitmapFont; //text
 
 public class Main extends ApplicationAdapter {
 
@@ -49,6 +50,13 @@ public class Main extends ApplicationAdapter {
 
     private boolean showPath = false; // path preview on or off
 
+    private enum GameState { TUTORIAL, COUNTDOWN, PLAYING, GAMEOVER } // phases of the game
+    private GameState gameState = GameState.TUTORIAL; //sets to tutorial at launch
+    private int score; // total points this round
+    private int shotPoints; // points for current shot, 1 or 2
+    private float timer; // timer
+    private BitmapFont font; // draws text
+
     // setup
     @Override
     public void create() {
@@ -61,6 +69,9 @@ public class Main extends ApplicationAdapter {
 
         playerX = MathUtils.random(450, 800); // random spot on the court
         playerY = 100; // floor height
+
+        font = new BitmapFont(); // font
+        font.getData().setScale(1.5f); //size
 
         resetShot(); // set up the first shot
     }
@@ -80,6 +91,37 @@ public class Main extends ApplicationAdapter {
         numberOfFloorBounces = 0;
     }
 
+    // when the shot ends, it resets the shot or starts countdown if after tutorial
+    private void endShot() {
+        if (gameState == GameState.TUTORIAL) startCountdown();
+        else resetShot();
+    }
+
+    // reset and start countdown for the next round
+    private void startCountdown() {
+        resetShot();
+        score = 0;
+        timer = 3;
+        gameState = GameState.COUNTDOWN;
+    }
+
+    // text
+    private void drawText() {
+        batch.begin();
+        if (gameState == GameState.TUTORIAL) {
+            font.draw(batch, "Practice shot! click to lock the angle, click again to lock the power and shoot the ball", 20, 90);
+            font.draw(batch, "Pressing T shows the path during power selection", 20, 60);
+            font.draw(batch, "Scoring with the path shown = 1 point, without path shown = 2 points", 20, 30);
+        } else if (gameState == GameState.COUNTDOWN) {
+            font.draw(batch, "Get ready! Score as much as you can in 60 seconds: " + (int) Math.ceil(timer), 20, 520);
+        } else if (gameState == GameState.PLAYING) {
+            font.draw(batch, "Score: " + score + "    Time: " + (int) Math.ceil(timer), 20, 520);
+        } else {
+            font.draw(batch, "Time's up! Score: " + score + "    Click to play again", 20, 520);
+        }
+        batch.end();
+    }
+
     // power coeff converted to launch speed
     private float getLaunchSpeed() {
         return MIN_SPEED + power * (MAX_SPEED - MIN_SPEED); //takes coeff times range and adds min to get speed
@@ -90,6 +132,21 @@ public class Main extends ApplicationAdapter {
         // toggle path preview
         if (Gdx.input.isKeyJustPressed(Input.Keys.T)) {
             showPath = !showPath; // flip on/off
+        }
+
+        //timing of the game
+        if (gameState == GameState.COUNTDOWN) { //countdown before round
+            timer -= delta;
+            if (timer <= 0) { gameState = GameState.PLAYING; timer = 60; } // timing for round
+            return;
+        }
+        if (gameState == GameState.PLAYING) {
+            timer -= delta;
+            if (timer <= 0) { gameState = GameState.GAMEOVER; return; }
+        }
+        if (gameState == GameState.GAMEOVER) { //start next countdown
+            if (Gdx.input.justTouched()) startCountdown(); 
+            return;
         }
 
         if (state == ShotState.AIMING_ANGLE) {
@@ -114,19 +171,27 @@ public class Main extends ApplicationAdapter {
                 state = ShotState.FLYING; // shot is live
             }
 
+            shotPoints = showPath ? 1 : 2; // path on = 1 point and path off = 2 points
+
         } else if (state == ShotState.FLYING) {
+            float oldY = ballY; //old y before changing
+
             velY += GRAVITY * delta; // gravity pulls velY down, velX untouched
             ballX += velX * delta; // move by velocity * time
-            ballY += velY * delta; 
+            ballY += velY * delta; // same as previous
             
             bounceOffBackboard();
             bounceOfRim();
+
+            //add points if the ball center goes through the hoop
+            if (gameState == GameState.PLAYING && oldY >= 313 && ballY < 313 && ballX > 209 && ballX < 264) {
+                score += shotPoints;
+            }
+
             bounceOffFloor();
 
-            // ball resets when it hits the floor
-            if (ballY < playerY) {
-                resetShot();
-            }
+        // off screen or broken numbers, next shot
+        if (ballX < -50 || ballX > 1010 || Float.isNaN(ballX) || Float.isNaN(ballY)) endShot();
         }
     }
 
@@ -147,6 +212,9 @@ public class Main extends ApplicationAdapter {
         drawCourt();
         drawPlayer();
         drawAiming();
+
+        // text
+        drawText();
     }
 
     // floor, hoop, lines
@@ -254,12 +322,12 @@ public class Main extends ApplicationAdapter {
 
     // arrow from ball at current angle
     private void drawArrow(float length, float r, float g, float b) {
-        float arrowDeg = 180 - angle; // aim angle to screen angle, 180 is left, 90 is up
-        float dirX = MathUtils.cosDeg(arrowDeg); // unit direction x (length 1)
-        float dirY = MathUtils.sinDeg(arrowDeg); // unit direction y
-        float tipX = ballX + length * dirX; // sharp point, ball + length along direction
+        float arrowDeg = 180 - angle; // aim angle to unit circle angle for trig
+        float dirX = MathUtils.cosDeg(arrowDeg); // x direction
+        float dirY = MathUtils.sinDeg(arrowDeg); // y direction
+        float tipX = ballX + length * dirX; // tip of the arrow
         float tipY = ballY + length * dirY;
-        float baseX = tipX - 18 * dirX; // 18 px back from tip, shaft ends and head starts
+        float baseX = tipX - 18 * dirX; // 18 pixels back, base for triangle
         float baseY = tipY - 18 * dirY;
 
         shapeRenderer.setColor(0, 0, 0, 1); // black
@@ -291,48 +359,48 @@ public class Main extends ApplicationAdapter {
             pathY += pathVelY * step; 
 
             if (pathY < playerY || pathX < 0) break; // stop at floor or left edge
-                shapeRenderer.circle(pathX, pathY, 2); // one dot, radius 2
+            shapeRenderer.circle(pathX, pathY, 2); // one dot, radius 2
         }
     }
 
-// bounce off the right side of the backboard
-    private void bounceOffBackboard() {
-        if (ballY < 290 || ballY > 395) return; // does not hit the backboard because its too high or low
-        if (ballX < 191) return; // already behind the board
-        if (ballX > 219) return; // left edge of ball hasnt reached the board yet
-        if (velX >= 0) return; // already movving right, ignore it
+    // bounce off the right side of the backboard
+        private void bounceOffBackboard() {
+            if (ballY < 290 || ballY > 395) return; // does not hit the backboard because its too high or low
+            if (ballX < 191) return; // already behind the board
+            if (ballX > 219) return; // left edge of ball hasnt reached the board yet
+            if (velX >= 0) return; // already movving right, ignore it
 
-        ballX = 209 + BALL_RADIUS; //center of the ball could overlap because of frames, so push it out to the right
-        velX = -velX * 0.8f; // flip left to right, 80% of the speed
-        velY = velY * 0.8f; // same vertical direction, 80% of the speed
+            ballX = 209 + BALL_RADIUS; //center of the ball could overlap because of frames, so push it out to the right
+            velX = -velX * 0.8f; // flip left to right, 80% of the speed
+            velY = velY * 0.8f; // same vertical direction, 80% of the speed
+        }
+
+    // bounce off the right edge of the rim
+    private void bounceOfRim() {
+        if (ballY < 300 || ballY > 327) return; // too high or low
+        if (ballX < 254 || ballX > 274) return; // too far left or right of the edge
+
+        if (ballX >= 264 && velX < 0) { // on the right side, moving left
+            ballX = 264 + BALL_RADIUS; // push out to the right
+            velX = -velX * 0.8f; // flip and 80%
+            velY = velY * 0.8f; // same vert velocity, 80% of the speed
+        } else if (ballX < 264 && velX > 0) { // on the left side, moving right
+            ballX = 264 - BALL_RADIUS; // push out to the left
+            velX = -velX * 0.8f; // flip to the left, 80%
+            velY = velY * 0.8f; // same y vel, 80%
+        }
     }
 
-// bounce off the right edge of the rim
-private void bounceOfRim() {
-    if (ballY < 300 || ballY > 327) return; // too high or low
-    if (ballX < 254 || ballX > 274) return; // too far left or right of the edge
-
-    if (ballX >= 264 && velX < 0) { // on the right side, moving left
-        ballX = 264 + BALL_RADIUS; // push out to the right
-        velX = -velX * 0.8f; // flip and 80%
-        velY = velY * 0.8f; // same vert velocity, 80% of the speed
-    } else if (ballX < 264 && velX > 0) { // on the left side, moving right
-        ballX = 264 - BALL_RADIUS; // push out to the left
-        velX = -velX * 0.8f; // flip to the left, 80%
-        velY = velY * 0.8f; // same y vel, 80%
+    private void bounceOffFloor() {
+        if (ballY < playerY) { // at or below floor level
+            ballY = playerY + BALL_RADIUS; // push it up to the floor
+            velY = -velY * 0.7f; // flip to up, 70%
+            velX = velX * 0.8f; // same x direction, 80%
+            numberOfFloorBounces+= 1; //count the number of bounces off the floower
+            if (numberOfFloorBounces == 2) endShot(); // velocity is small
+        }
+        else return; // not below the floor, ignore it
     }
-}
-
-private void bounceOffFloor() {
-    if (ballY < playerY) { // at or below floor level
-        ballY = playerY + BALL_RADIUS; // push it up to the floor
-        velY = -velY * 0.7f; // flip to up, 70%
-        velX = velX * 0.8f; // same x direction, 80%
-        numberOfFloorBounces+= 1; //count the number of bounces off the floower
-        if (numberOfFloorBounces == 2) resetShot(); // velocity is small
-    }
-    else return; // not below the floor, ignore it
-}
 
     // free memory, called this on close
     @Override
@@ -340,5 +408,6 @@ private void bounceOffFloor() {
         batch.dispose();
         background.dispose();
         shapeRenderer.dispose();
+        font.dispose();
     }
 }
